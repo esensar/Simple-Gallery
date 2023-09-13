@@ -1,6 +1,6 @@
-import java.io.FileInputStream
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
+import java.io.FileInputStream
 
 val isProprietary = gradle.startParameter.taskNames.any { task -> task.contains("Proprietary") }
 
@@ -9,6 +9,11 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.ksp)
     alias(libs.plugins.imgly).apply(false)
+    base
+}
+
+base {
+    archivesName.set("gallery-${project.libs.versions.app.version.versionCode.get()}")
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -26,7 +31,9 @@ android {
         targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
         versionName = project.libs.versions.app.version.versionName.get()
         versionCode = project.libs.versions.app.version.versionCode.get().toInt()
-        setProperty("archivesBaseName", "gallery-$versionCode")
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     signingConfigs {
@@ -48,13 +55,13 @@ android {
     buildTypes {
         debug {
             // we cannot change the original package name, else PhotoEditorSDK won't work
-            //applicationIdSuffix = ".debug"
+            // applicationIdSuffix = ".debug"
         }
         release {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
